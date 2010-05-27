@@ -112,5 +112,12 @@
 			<artifactId>log4j</artifactId>
 			<version>1.2.15</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>net.frontlinesms.core</groupId>
+			<artifactId>frontlinesms-test</artifactId>
+			<version>0.01.01</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 </project>
