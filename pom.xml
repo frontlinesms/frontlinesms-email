@@ -5,6 +5,37 @@
   <name>FrontlineSMS Email Library</name>
   <version>0.0.1-SNAPSHOT</version>
   <description>Lib for accessing email accounts in a consistent manner.</description>
+	<licenses>
+		<license>
+			<name>GNU Lesser General Public License v3 or later</name>
+			<url>http://www.gnu.org/copyleft/lesser.html</url>
+			<distribution>manual</distribution>
+			<comments>
+				FrontlineSMS - http://www.frontlinesms.com
+				Copyright 2007, 2008 kiwanja
+				
+				This file is part of FrontlineSMS.
+				
+				FrontlineSMS is free software: you can redistribute it and/or modify it
+				under the terms of the GNU Lesser General Public License as published by
+				the Free Software Foundation, either version 3 of the License, or (at
+				your option) any later version.
+				
+				FrontlineSMS is distributed in the hope that it will be useful, but
+				WITHOUT ANY WARRANTY; without even the implied warranty of
+				MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
+				General Public License for more details.
+				
+				You should have received a copy of the GNU Lesser General Public License
+				along with FrontlineSMS. If not, see http://www.gnu.org/licenses/.
+			</comments>
+		</license>
+	</licenses>
+	
+	<scm>
+		<connection>scm:git://frontlinesms.git.sourceforge.net/gitroot/frontlinesms/frontlinesms.git</connection>
+		<developerConnection>scm:git:ssh://alexandergeorge@frontlinesms.git.sourceforge.net/gitroot/frontlinesms/frontlinesms-email</developerConnection>
+	</scm>
   
 	
 	<repositories>
