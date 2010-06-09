@@ -21,7 +21,7 @@ import com.sun.mail.pop3.POP3Store;
 
 /**
  * Object that reads messages from a POP email account.
- * @author Alex
+ * @author Alex Anderson <alex@frontlinesms.com>
  */
 public class PopMessageReceiver {
 //> STATIC CONSTANTS
