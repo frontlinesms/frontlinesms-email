@@ -3,7 +3,7 @@
   <groupId>net.frontlinesms.core</groupId>
   <artifactId>frontlinesms-email</artifactId>
   <name>FrontlineSMS Email Library</name>
-  <version>0.0.2</version>
+  <version>0.0.3-SNAPSHOT</version>
   <description>Lib for accessing email accounts in a consistent manner.</description>
 	<licenses>
 		<license>
