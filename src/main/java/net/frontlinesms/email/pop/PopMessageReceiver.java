@@ -3,8 +3,10 @@
  */
 package net.frontlinesms.email.pop;
 
+import java.io.IOException;
 import java.util.Properties;
 
+import javax.mail.Flags;
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -45,6 +47,8 @@ public class PopMessageReceiver {
 	private String hostPassword;
 	/** Address of the POP server. */
 	private String hostAddress;
+	/** Last check */
+	private Long lastCheck;
 
 //> CONSTRUCTORS
 	/**
@@ -53,30 +57,7 @@ public class PopMessageReceiver {
 	 */
 	public PopMessageReceiver(PopMessageProcessor processor) {
 		if(processor == null) throw new IllegalArgumentException("Processor must not be null.");
-		this.processor = processor;	
-	}
-	
-//> INSTANCE HELPER METHODS
-	/** @return {@link Store} for accessing the pop account. */
-	private Store getStore() {
-		// Create the properties
-		Properties pop3Props = new Properties();
-		pop3Props.setProperty("mail.pop3.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-		pop3Props.setProperty("mail.pop3.socketFactory.fallback", "false");
-		pop3Props.setProperty("mail.pop3.port", Integer.toString(hostPort));
-		pop3Props.setProperty("mail.pop3.socketFactory.port", Integer.toString(hostPort));
-		
-		// Create session and URL
-		Session session = Session.getInstance(pop3Props, null);
-		URLName url = new URLName("pop3", hostAddress, hostPort, "", hostUsername, hostPassword);
-		
-		// Create the store
-		LOG.trace("Using SSL: " + useSsl);
-		if (useSsl) {
-			return new POP3SSLStore(session, url);
-		} else {
-			return new POP3Store(session, url);
-		}
+		this.processor = processor;
 	}
 	
 //> POP RECEIVE METHODS
@@ -88,7 +69,7 @@ public class PopMessageReceiver {
 	public void receive(String folderName) throws PopReceiveException {
 		LOG.trace("ENTER : " + hostUsername + "@" + hostAddress + ":" + hostPort);
 
-		Store store = getStore();
+		Store store = PopUtils.getPopStore(hostAddress, hostUsername, hostPort, hostPassword, useSsl);
 		Folder folder = null;
 
 		try {
@@ -111,13 +92,20 @@ public class PopMessageReceiver {
 
 			// Loop over all of the messages
 			for (Message message : messages) {
+//				if (this.lastCheck != null && this.lastCheck < message.getReceivedDate().getTime()) {
+//					break;
+//				}
 				if(emailFilter == null || emailFilter.accept(message)) {
 					if(emailFilter != null) LOG.info("Email accepted by filter.  Beginning processing.");
 					processor.processPopMessage(message);
 				} else {
 					LOG.info("Email rejected by filter.");
 				}
+				
+				message.setFlag(Flags.Flag.DELETED, true);
 			}
+			
+			this.lastCheck = System.currentTimeMillis();
 
 			LOG.trace("EXIT : POP email account checked without error.");
 		} catch(MessagingException ex) {
@@ -125,10 +113,11 @@ public class PopMessageReceiver {
 			throw new PopReceiveException(ex);
 		} finally {
 			// Attempt to close our folder
-			if(folder != null) try { folder.close(true); } catch(MessagingException ex) { LOG.warn("Error closing POP folder.", ex); }
+			if(folder != null) try { folder.close(true); folder.delete(true); } catch(MessagingException ex) { LOG.warn("Error closing POP folder.", ex); }
 
 			// Attempt to close the message store
 			try { store.close(); } catch(MessagingException ex) { LOG.warn("Error closing POP store.", ex); }
+			
 		}	
 	}
 
@@ -209,5 +198,13 @@ public class PopMessageReceiver {
 	 */
 	public void setHostAddress(String hostAddress) {
 		this.hostAddress = hostAddress;
+	}
+
+	public void setLastCheck(Long lastCheck) {
+		this.lastCheck = lastCheck;
+	}
+
+	public Long getLastCheck() {
+		return lastCheck;
 	}
 }

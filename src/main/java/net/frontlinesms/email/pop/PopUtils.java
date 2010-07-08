@@ -4,14 +4,21 @@
 package net.frontlinesms.email.pop;
 
 import java.io.IOException;
+import java.util.Properties;
 
 import javax.mail.Address;
 import javax.mail.BodyPart;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Multipart;
+import javax.mail.Session;
+import javax.mail.Store;
+import javax.mail.URLName;
 
 import org.apache.log4j.Logger;
+
+import com.sun.mail.pop3.POP3SSLStore;
+import com.sun.mail.pop3.POP3Store;
 
 /**
  * Utility methods for doing common actions on POP {@link Message}s.
@@ -23,6 +30,8 @@ public class PopUtils {
 	private static Logger LOG = Logger.getLogger(PopUtils.class);
 	/** MIME Type for plain text */
 	private static final String MIMETYPE_TEXT_PLAIN = "text/plain";
+	private static final String POP3 = "pop3";
+	private static final String TIMEOUT = "6000";
 
 //> INSTANCE PROPERTIES
 
@@ -115,5 +124,30 @@ public class PopUtils {
 		}
 		// No address could be found, so return empty.
 		return "";
+	}
+	
+	/** @return {@link Store} for accessing the pop account. */
+	public static Store getPopStore(String host, String username, int hostPort, String password, boolean useSSL) {
+		// Create the properties
+		Properties pop3Props = new Properties();
+		
+		pop3Props.setProperty("mail.pop3.socketFactory.fallback", "false");
+		pop3Props.setProperty("mail.pop3.socketFactory.port", Integer.toString(hostPort));
+		pop3Props.setProperty("mail.pop3.port", Integer.toString(hostPort));
+		pop3Props.setProperty("mail.pop3.timeout", TIMEOUT);
+		pop3Props.setProperty("mail.pop3.connectiontimeout", TIMEOUT);
+		
+		// Create session and URL
+		Session session = Session.getInstance(pop3Props, null);
+		session.setDebug(true);
+		URLName url = new URLName(POP3, host, hostPort, "", username, password);
+		
+		// Create the store
+		LOG.trace("Using SSL: " + useSSL);
+		if (useSSL) {
+			return new POP3SSLStore(session, url);
+		} else {
+			return new POP3Store(session, url);
+		}
 	}
 }
