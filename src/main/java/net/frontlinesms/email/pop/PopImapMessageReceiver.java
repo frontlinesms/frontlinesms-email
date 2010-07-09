@@ -3,40 +3,32 @@
  */
 package net.frontlinesms.email.pop;
 
-import java.io.IOException;
-import java.util.Properties;
-
-import javax.mail.Flags;
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
-import javax.mail.Session;
 import javax.mail.Store;
-import javax.mail.URLName;
+import javax.mail.Flags.Flag;
 
 import net.frontlinesms.email.EmailFilter;
 
 import org.apache.log4j.Logger;
 
-import com.sun.mail.pop3.POP3SSLStore;
-import com.sun.mail.pop3.POP3Store;
-
 /**
- * Object that reads messages from a POP email account.
+ * Object that reads messages from a POP or IMAP email account.
  * @author Alex Anderson <alex@frontlinesms.com>
  */
-public class PopMessageReceiver {
+public class PopImapMessageReceiver {
 //> STATIC CONSTANTS
 	/** Folder name for the inbox */
 	private static final String FOLDER_INBOX = "INBOX";
 	/** Logging object for this class */
-	private static Logger LOG = Logger.getLogger(PopMessageReceiver.class);
+	private static Logger LOG = Logger.getLogger(PopImapMessageReceiver.class);
 	
 //> INSTANCE PROPERTIES
 	/** Object that filters emails to reduce email spam. */
 	private EmailFilter emailFilter;
 	/** Object that will process received messages. */
-	private final PopMessageProcessor processor;
+	private final PopImapMessageProcessor processor;
 	/** Flag indicating this should use SSL when connecting to the email server. */
 	private boolean useSsl;
 	/** Port to connect to on the POP server. */
@@ -49,13 +41,15 @@ public class PopMessageReceiver {
 	private String hostAddress;
 	/** Last check */
 	private Long lastCheck;
+	/** Protocol: POP or IMAP */
+	private String protocol;
 
 //> CONSTRUCTORS
 	/**
-	 * Creates a new {@link PopMessageReceiver}
-	 * @param processor The {@link PopMessageProcessor} which processes incoming messages.
+	 * Creates a new {@link PopImapMessageReceiver}
+	 * @param processor The {@link PopImapMessageProcessor} which processes incoming messages.
 	 */
-	public PopMessageReceiver(PopMessageProcessor processor) {
+	public PopImapMessageReceiver(PopImapMessageProcessor processor) {
 		if(processor == null) throw new IllegalArgumentException("Processor must not be null.");
 		this.processor = processor;
 	}
@@ -69,7 +63,8 @@ public class PopMessageReceiver {
 	public void receive(String folderName) throws PopReceiveException {
 		LOG.trace("ENTER : " + hostUsername + "@" + hostAddress + ":" + hostPort);
 
-		Store store = PopUtils.getPopStore(hostAddress, hostUsername, hostPort, hostPassword, useSsl);
+		//Store store = PopUtils.getPopStore(hostAddress, hostUsername, hostPort, hostPassword, useSsl);
+		Store store = PopImapUtils.getStore(hostAddress, hostUsername, hostPort, hostPassword, useSsl, protocol);
 		Folder folder = null;
 
 		try {
@@ -95,14 +90,12 @@ public class PopMessageReceiver {
 //				if (this.lastCheck != null && this.lastCheck < message.getReceivedDate().getTime()) {
 //					break;
 //				}
-				if(emailFilter == null || emailFilter.accept(message)) {
-					if(emailFilter != null) LOG.info("Email accepted by filter.  Beginning processing.");
-					processor.processPopMessage(message);
-				} else {
-					LOG.info("Email rejected by filter.");
-				}
-				
-				message.setFlag(Flags.Flag.DELETED, true);
+					if(emailFilter == null || emailFilter.accept(message)) {
+						if(emailFilter != null) LOG.info("Email accepted by filter.  Beginning processing.");
+						processor.processMessage(message);
+					} else {
+						LOG.info("Email rejected by filter.");
+					}
 			}
 			
 			this.lastCheck = System.currentTimeMillis();
@@ -113,7 +106,7 @@ public class PopMessageReceiver {
 			throw new PopReceiveException(ex);
 		} finally {
 			// Attempt to close our folder
-			if(folder != null) try { folder.close(true); folder.delete(true); } catch(MessagingException ex) { LOG.warn("Error closing POP folder.", ex); }
+			if(folder != null) try { folder.close(true); } catch(MessagingException ex) { LOG.warn("Error closing POP folder.", ex); }
 
 			// Attempt to close the message store
 			try { store.close(); } catch(MessagingException ex) { LOG.warn("Error closing POP store.", ex); }
@@ -206,5 +199,13 @@ public class PopMessageReceiver {
 
 	public Long getLastCheck() {
 		return lastCheck;
+	}
+
+	public void setProtocol(String protocol) {
+		this.protocol = protocol;
+	}
+
+	public String getProtocol() {
+		return protocol;
 	}
 }

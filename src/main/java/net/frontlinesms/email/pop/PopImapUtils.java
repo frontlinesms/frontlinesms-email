@@ -17,6 +17,8 @@ import javax.mail.URLName;
 
 import org.apache.log4j.Logger;
 
+import com.sun.mail.imap.IMAPSSLStore;
+import com.sun.mail.imap.IMAPStore;
 import com.sun.mail.pop3.POP3SSLStore;
 import com.sun.mail.pop3.POP3Store;
 
@@ -24,14 +26,17 @@ import com.sun.mail.pop3.POP3Store;
  * Utility methods for doing common actions on POP {@link Message}s.
  * @author Alex
  */
-public class PopUtils {
+public class PopImapUtils {
 //> STATIC CONSTANTS
 	/** Logging object */
-	private static Logger LOG = Logger.getLogger(PopUtils.class);
+	private static Logger LOG = Logger.getLogger(PopImapUtils.class);
 	/** MIME Type for plain text */
 	private static final String MIMETYPE_TEXT_PLAIN = "text/plain";
-	private static final String POP3 = "pop3";
-	private static final String TIMEOUT = "6000";
+	public static final String IMAP = "IMAP";
+	public static final String POP = "POP3";
+	public static final String SMTP = "SMTP";
+	public static final String SMTPS = "smtps";
+	private static final String TIMEOUT = "5000";
 
 //> INSTANCE PROPERTIES
 
@@ -126,28 +131,30 @@ public class PopUtils {
 		return "";
 	}
 	
-	/** @return {@link Store} for accessing the pop account. */
-	public static Store getPopStore(String host, String username, int hostPort, String password, boolean useSSL) {
+	/** @return {@link Store} for accessing the IMAP or POP account. */
+	public static Store getStore(String host, String username, int hostPort, String password, boolean useSSL, String protocol) {
 		// Create the properties
-		Properties pop3Props = new Properties();
+		Properties props = new Properties();
 		
-		pop3Props.setProperty("mail.pop3.socketFactory.fallback", "false");
-		pop3Props.setProperty("mail.pop3.socketFactory.port", Integer.toString(hostPort));
-		pop3Props.setProperty("mail.pop3.port", Integer.toString(hostPort));
-		pop3Props.setProperty("mail.pop3.timeout", TIMEOUT);
-		pop3Props.setProperty("mail.pop3.connectiontimeout", TIMEOUT);
+		props.setProperty("mail." + protocol + ".socketFactory.fallback", "false");
+		props.setProperty("mail." + protocol + ".socketFactory.port", Integer.toString(hostPort));
+		props.setProperty("mail." + protocol + ".port", Integer.toString(hostPort));
+		props.setProperty("mail." + protocol + ".timeout", TIMEOUT);
+		props.setProperty("mail." + protocol + ".connectiontimeout", TIMEOUT);
+		props.setProperty("mail." + protocol + ".ssl.trust", "*");
+		props.setProperty("mail." + protocol + ".starttls.enable", String.valueOf(useSSL));
 		
 		// Create session and URL
-		Session session = Session.getInstance(pop3Props, null);
+		Session session = Session.getInstance(props, null);
 		session.setDebug(true);
-		URLName url = new URLName(POP3, host, hostPort, "", username, password);
+		URLName url = new URLName(protocol, host, hostPort, "", username, password);
 		
 		// Create the store
 		LOG.trace("Using SSL: " + useSSL);
 		if (useSSL) {
-			return new POP3SSLStore(session, url);
+			return (protocol.equals(IMAP) ? new IMAPSSLStore(session, url) : new POP3SSLStore(session, url));
 		} else {
-			return new POP3Store(session, url);
+			return (protocol.equals(IMAP) ? new IMAPStore(session, url) : new POP3Store(session, url));
 		}
 	}
 }
