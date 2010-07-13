@@ -3,6 +3,11 @@
  */
 package net.frontlinesms.email.pop;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -21,6 +26,8 @@ public class PopImapMessageReceiver {
 //> STATIC CONSTANTS
 	/** Folder name for the inbox */
 	private static final String FOLDER_INBOX = "INBOX";
+	private static final String HEADER_DATE = "Date";
+	
 	/** Logging object for this class */
 	private static Logger LOG = Logger.getLogger(PopImapMessageReceiver.class);
 	
@@ -41,7 +48,7 @@ public class PopImapMessageReceiver {
 	private String hostAddress;
 	/** Last check */
 	private Long lastCheck;
-	/** Protocol: POP or IMAP */
+	/** Protocol: POP3 or IMAP */
 	private String protocol;
 
 //> CONSTRUCTORS
@@ -68,7 +75,7 @@ public class PopImapMessageReceiver {
 		Folder folder = null;
 
 		try {
-			LOG.trace("Connecting to email store: " + hostAddress + ":" + hostPort);
+			LOG.trace("Connecting to " + protocol + " store: " + hostAddress + ":" + hostPort);
 			store.connect();
 
 			// Get a handle on the INBOX folder.
@@ -87,31 +94,54 @@ public class PopImapMessageReceiver {
 
 			// Loop over all of the messages
 			for (Message message : messages) {
-//				if (this.lastCheck != null && this.lastCheck < message.getReceivedDate().getTime()) {
-//					break;
-//				}
-					if(emailFilter == null || emailFilter.accept(message)) {
-						if(emailFilter != null) LOG.info("Email accepted by filter.  Beginning processing.");
-						processor.processMessage(message);
-					} else {
-						LOG.info("Email rejected by filter.");
+				if (this.lastCheck == null) {
+					this.processMessage(message);
+				} else {
+					if (protocol.equals(PopImapUtils.POP3)) {
+						this.handlePopMessage(message);
+					} else if (!message.getFlags().contains(Flag.SEEN)) {
+						this.processMessage(message);
 					}
+				}
 			}
-			
-			this.lastCheck = System.currentTimeMillis();
 
-			LOG.trace("EXIT : POP email account checked without error.");
+			LOG.trace("EXIT : " + protocol + " email account checked without error.");
 		} catch(MessagingException ex) {
-			LOG.error("Unable to connect to POP account.", ex);
+			LOG.error("Unable to connect to " + protocol + " account.", ex);
 			throw new PopReceiveException(ex);
 		} finally {
 			// Attempt to close our folder
-			if(folder != null) try { folder.close(true); } catch(MessagingException ex) { LOG.warn("Error closing POP folder.", ex); }
+			if(folder != null) try { folder.close(true); } catch(MessagingException ex) { LOG.warn("Error closing " + protocol + " folder.", ex); }
 
 			// Attempt to close the message store
-			try { store.close(); } catch(MessagingException ex) { LOG.warn("Error closing POP store.", ex); }
+			try { store.close(); } catch(MessagingException ex) { LOG.warn("Error closing " + protocol + " store.", ex); }
 			
 		}	
+	}
+	
+	private void handlePopMessage (Message message) {
+		Date date = null;
+		try {
+			String[] dateHeader = message.getHeader(HEADER_DATE);
+			if (dateHeader != null && dateHeader.length > 0) {
+				DateFormat formatter = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss Z");
+				date = (Date)formatter.parse(dateHeader[0]);
+			}
+		} catch (MessagingException e) {
+		} catch (ParseException e) { }
+		
+		if (date == null || date.after(new Date(this.lastCheck))) {
+			this.processMessage(message);
+		}
+	}
+
+	private void processMessage(Message message) {
+		if(emailFilter == null || emailFilter.accept(message)) {
+			if(emailFilter != null) LOG.info("Email accepted by filter.  Beginning processing.");
+			processor.processMessage(message);
+		} else {
+			LOG.info("Email rejected by filter.");
+		}
 	}
 
 	/**
