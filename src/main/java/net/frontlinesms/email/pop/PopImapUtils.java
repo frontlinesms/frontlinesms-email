@@ -146,7 +146,7 @@ public class PopImapUtils {
 		
 		// Create session and URL
 		Session session = Session.getInstance(props, null);
-		session.setDebug(true);
+		session.setDebug(false);
 		URLName url = new URLName(protocol, host, hostPort, "", username, password);
 		
 		// Create the store

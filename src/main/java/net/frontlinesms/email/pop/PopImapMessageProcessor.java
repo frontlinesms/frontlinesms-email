@@ -3,6 +3,8 @@
  */
 package net.frontlinesms.email.pop;
 
+import java.util.Date;
+
 import javax.mail.Message;
 
 /**
@@ -22,8 +24,9 @@ public interface PopImapMessageProcessor {
 	/**
 	 * Process an incoming email message 
 	 * @param message the message to process
+	 * @param message the date of reception
 	 */
-	public void processMessage(Message message);
+	public void processMessage(Message message, Date date);
 
 //> STATIC FACTORIES
 

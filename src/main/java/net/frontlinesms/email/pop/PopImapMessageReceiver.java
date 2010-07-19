@@ -91,17 +91,12 @@ public class PopImapMessageReceiver {
 			}
 
 			Message[] messages = folder.getMessages();
-
 			// Loop over all of the messages
 			for (Message message : messages) {
-				if (this.lastCheck == null) {
-					this.processMessage(message);
-				} else {
-					if (protocol.equals(PopImapUtils.POP3)) {
-						this.handlePopMessage(message);
-					} else if (!message.getFlags().contains(Flag.SEEN)) {
-						this.processMessage(message);
-					}
+				if (protocol.equals(PopImapUtils.POP3)) {
+					this.handlePopMessage(message);
+				} else if (this.lastCheck == null || !message.getFlags().contains(Flag.SEEN)) {
+					this.processMessage(message, message.getReceivedDate());
 				}
 			}
 
@@ -127,18 +122,20 @@ public class PopImapMessageReceiver {
 				DateFormat formatter = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss Z");
 				date = (Date)formatter.parse(dateHeader[0]);
 			}
+			
+			message.setFlag(Flag.DELETED, true);
 		} catch (MessagingException e) {
 		} catch (ParseException e) { }
 		
-		if (date == null || date.after(new Date(this.lastCheck))) {
-			this.processMessage(message);
+		if (this.lastCheck == null || date == null || date.after(new Date(this.lastCheck))) {
+			this.processMessage(message, date);
 		}
 	}
 
-	private void processMessage(Message message) {
+	private void processMessage(Message message, Date date) {
 		if(emailFilter == null || emailFilter.accept(message)) {
 			if(emailFilter != null) LOG.info("Email accepted by filter.  Beginning processing.");
-			processor.processMessage(message);
+			processor.processMessage(message, date);
 		} else {
 			LOG.info("Email rejected by filter.");
 		}
