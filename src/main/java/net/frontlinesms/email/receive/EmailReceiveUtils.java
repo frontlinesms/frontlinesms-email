@@ -1,19 +1,12 @@
 /**
  * 
  */
-package net.frontlinesms.email.pop;
+package net.frontlinesms.email.receive;
 
 import java.io.IOException;
 import java.util.Properties;
 
-import javax.mail.Address;
-import javax.mail.BodyPart;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.Session;
-import javax.mail.Store;
-import javax.mail.URLName;
+import javax.mail.*;
 
 import org.apache.log4j.Logger;
 
@@ -23,19 +16,17 @@ import com.sun.mail.pop3.POP3SSLStore;
 import com.sun.mail.pop3.POP3Store;
 
 /**
- * Utility methods for doing common actions on POP {@link Message}s.
- * @author Alex
+ * Utility methods for doing common actions on {@link Message}s.
+ * @author Alex Anderson <alex@frontlinesms.com>
+ * @author Morgan Belkadi <morgan@frontlinesms.com>
  */
-public class PopImapUtils {
+public class EmailReceiveUtils {
 //> STATIC CONSTANTS
 	/** Logging object */
-	private static Logger LOG = Logger.getLogger(PopImapUtils.class);
+	private static Logger LOG = Logger.getLogger(EmailReceiveUtils.class);
+	
 	/** MIME Type for plain text */
 	private static final String MIMETYPE_TEXT_PLAIN = "text/plain";
-	public static final String IMAP = "IMAP";
-	public static final String POP3 = "POP3";
-	public static final String SMTP = "SMTP";
-	public static final String SMTPS = "smtps";
 	private static final String TIMEOUT = "5000";
 
 //> INSTANCE PROPERTIES
@@ -132,7 +123,7 @@ public class PopImapUtils {
 	}
 	
 	/** @return {@link Store} for accessing the IMAP or POP account. */
-	public static Store getStore(String host, String username, int hostPort, String password, boolean useSSL, String protocol) {
+	public static Store getStore(String host, String username, int hostPort, String password, boolean useSSL, EmailReceiveProtocol protocol) {
 		// Create the properties
 		Properties props = new Properties();
 		
@@ -147,14 +138,14 @@ public class PopImapUtils {
 		// Create session and URL
 		Session session = Session.getInstance(props, null);
 		session.setDebug(false);
-		URLName url = new URLName(protocol, host, hostPort, "", username, password);
+		URLName url = new URLName(protocol.toString(), host, hostPort, "", username, password);
 		
 		// Create the store
 		LOG.trace("Using SSL: " + useSSL);
 		if (useSSL) {
-			return (protocol.equals(IMAP) ? new IMAPSSLStore(session, url) : new POP3SSLStore(session, url));
+			return (protocol == EmailReceiveProtocol.IMAP ? new IMAPSSLStore(session, url) : new POP3SSLStore(session, url));
 		} else {
-			return (protocol.equals(IMAP) ? new IMAPStore(session, url) : new POP3Store(session, url));
+			return (protocol == EmailReceiveProtocol.IMAP ? new IMAPStore(session, url) : new POP3Store(session, url));
 		}
 	}
 }

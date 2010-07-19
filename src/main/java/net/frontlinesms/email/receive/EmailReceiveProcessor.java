@@ -1,7 +1,7 @@
 /**
  * 
  */
-package net.frontlinesms.email.pop;
+package net.frontlinesms.email.receive;
 
 import java.util.Date;
 
@@ -9,9 +9,10 @@ import javax.mail.Message;
 
 /**
  * Class that processes messages received from a POP or IMAP email account.
- * @author Alex
+ * @author Alex Anderson <alex@frontlinesms.com>
+ * @author Morgan Belkadi <morgan@frontlinesms.com>
  */
-public interface PopImapMessageProcessor {
+public interface EmailReceiveProcessor {
 //> STATIC CONSTANTS
 
 //> INSTANCE PROPERTIES

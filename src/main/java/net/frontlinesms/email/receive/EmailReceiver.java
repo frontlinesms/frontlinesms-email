@@ -1,7 +1,7 @@
 /**
  * 
  */
-package net.frontlinesms.email.pop;
+package net.frontlinesms.email.receive;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -21,21 +21,22 @@ import org.apache.log4j.Logger;
 /**
  * Object that reads messages from a POP or IMAP email account.
  * @author Alex Anderson <alex@frontlinesms.com>
+ * @author Morgan Belkadi <morgan@frontlinesms.com>
  */
-public class PopImapMessageReceiver {
+public class EmailReceiver {
 //> STATIC CONSTANTS
 	/** Folder name for the inbox */
 	private static final String FOLDER_INBOX = "INBOX";
 	private static final String HEADER_DATE = "Date";
 	
 	/** Logging object for this class */
-	private static Logger LOG = Logger.getLogger(PopImapMessageReceiver.class);
+	private static Logger LOG = Logger.getLogger(EmailReceiver.class);
 	
 //> INSTANCE PROPERTIES
 	/** Object that filters emails to reduce email spam. */
 	private EmailFilter emailFilter;
 	/** Object that will process received messages. */
-	private final PopImapMessageProcessor processor;
+	private final EmailReceiveProcessor processor;
 	/** Flag indicating this should use SSL when connecting to the email server. */
 	private boolean useSsl;
 	/** Port to connect to on the POP server. */
@@ -49,14 +50,14 @@ public class PopImapMessageReceiver {
 	/** Last check */
 	private Long lastCheck;
 	/** Protocol: POP3 or IMAP */
-	private String protocol;
+	private EmailReceiveProtocol protocol;
 
 //> CONSTRUCTORS
 	/**
-	 * Creates a new {@link PopImapMessageReceiver}
-	 * @param processor The {@link PopImapMessageProcessor} which processes incoming messages.
+	 * Creates a new {@link EmailReceiver}
+	 * @param processor The {@link EmailReceiveProcessor} which processes incoming messages.
 	 */
-	public PopImapMessageReceiver(PopImapMessageProcessor processor) {
+	public EmailReceiver(EmailReceiveProcessor processor) {
 		if(processor == null) throw new IllegalArgumentException("Processor must not be null.");
 		this.processor = processor;
 	}
@@ -65,13 +66,13 @@ public class PopImapMessageReceiver {
 	/**
 	 * Blocking method which attempts to read incoming emails from a particular folder.
 	 * @param folderName The name of the folder to read emails from
-	 * @throws PopReceiveException 
+	 * @throws EmailReceiveException 
 	 */
-	public void receive(String folderName) throws PopReceiveException {
+	public void receive(String folderName) throws EmailReceiveException {
 		LOG.trace("ENTER : " + hostUsername + "@" + hostAddress + ":" + hostPort);
 
 		//Store store = PopUtils.getPopStore(hostAddress, hostUsername, hostPort, hostPassword, useSsl);
-		Store store = PopImapUtils.getStore(hostAddress, hostUsername, hostPort, hostPassword, useSsl, protocol);
+		Store store = EmailReceiveUtils.getStore(hostAddress, hostUsername, hostPort, hostPassword, useSsl, protocol);
 		Folder folder = null;
 
 		try {
@@ -93,7 +94,7 @@ public class PopImapMessageReceiver {
 			Message[] messages = folder.getMessages();
 			// Loop over all of the messages
 			for (Message message : messages) {
-				if (protocol.equals(PopImapUtils.POP3)) {
+				if (protocol == EmailReceiveProtocol.POP3) {
 					this.handlePopMessage(message);
 				} else if (this.lastCheck == null || !message.getFlags().contains(Flag.SEEN)) {
 					this.processMessage(message, message.getReceivedDate());
@@ -103,7 +104,7 @@ public class PopImapMessageReceiver {
 			LOG.trace("EXIT : " + protocol + " email account checked without error.");
 		} catch(MessagingException ex) {
 			LOG.error("Unable to connect to " + protocol + " account.", ex);
-			throw new PopReceiveException(ex);
+			throw new EmailReceiveException(ex);
 		} finally {
 			// Attempt to close our folder
 			if(folder != null) try { folder.close(true); } catch(MessagingException ex) { LOG.warn("Error closing " + protocol + " folder.", ex); }
@@ -143,9 +144,9 @@ public class PopImapMessageReceiver {
 
 	/**
 	 * Blocking methods that attempts to read messages from a POP email account.
-	 * @throws PopReceiveException If there was a problem receiving messages with this object.
+	 * @throws EmailReceiveException If there was a problem receiving messages with this object.
 	 */
-	public void receive() throws PopReceiveException {
+	public void receive() throws EmailReceiveException {
 		this.receive(FOLDER_INBOX);
 	}
 	
@@ -228,11 +229,11 @@ public class PopImapMessageReceiver {
 		return lastCheck;
 	}
 
-	public void setProtocol(String protocol) {
+	public void setProtocol(EmailReceiveProtocol protocol) {
 		this.protocol = protocol;
 	}
 
-	public String getProtocol() {
+	public EmailReceiveProtocol getProtocol() {
 		return protocol;
 	}
 }
