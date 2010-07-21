@@ -25,7 +25,7 @@ public interface EmailReceiveProcessor {
 	/**
 	 * Process an incoming email message 
 	 * @param message the message to process
-	 * @param message the date of reception
+	 * @param date the date of reception FIXME this argument should be removed.  It is taken from the header of message
 	 */
 	public void processMessage(Message message, Date date);
 

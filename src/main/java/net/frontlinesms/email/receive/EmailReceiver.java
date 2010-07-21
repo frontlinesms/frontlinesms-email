@@ -129,14 +129,14 @@ public class EmailReceiver {
 		} catch (ParseException e) { }
 		
 		if (this.lastCheck == null || date == null || date.after(new Date(this.lastCheck))) {
-			this.processMessage(message, date);
+			this.processMessage(message, date); // FIXME date should not be passed here
 		}
 	}
 
 	private void processMessage(Message message, Date date) {
 		if(emailFilter == null || emailFilter.accept(message)) {
 			if(emailFilter != null) LOG.info("Email accepted by filter.  Beginning processing.");
-			processor.processMessage(message, date);
+			processor.processMessage(message, date); // FIXME date should not be passed here
 		} else {
 			LOG.info("Email rejected by filter.");
 		}
